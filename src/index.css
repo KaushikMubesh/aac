@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+  color: #10233f;
+  background:
+    radial-gradient(circle at top left, rgba(255, 220, 168, 0.8), transparent 32%),
+    radial-gradient(circle at top right, rgba(150, 227, 242, 0.7), transparent 28%),
+    linear-gradient(180deg, #fff7ec 0%, #f4f9ff 48%, #eef7f3 100%);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button {
+  cursor: pointer;
+}
+
+#root {
+  min-height: 100vh;
+}
