@@ -1,100 +1,271 @@
 import { useState } from "react";
 
-function StudentAuthCard({ language, onStudentAccess, studentNotice }) {
+function StudentLoginModal({
+  language,
+  isOpen,
+  selectedStudent,
+  password,
+  setPassword,
+  error,
+  onClose,
+  onConfirm,
+}) {
+  const isEnglish = language === "en";
+
+  if (!isOpen || !selectedStudent) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4">
+      <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-[0_28px_90px_rgba(16,35,63,0.28)]">
+        <div className="inline-flex rounded-full bg-sky-100 px-4 py-2 text-sm font-bold text-sky-900">
+          {isEnglish ? "Student Login" : "மாணவர் உள்நுழைவு"}
+        </div>
+        <h2 className="mt-4 text-2xl font-black text-slate-900">
+          {isEnglish ? "Open saved student profile" : "சேமிக்கப்பட்ட மாணவர் சுயவிவரத்தை திறக்கவும்"}
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          {isEnglish
+            ? `Selected student: ${selectedStudent.name} (${selectedStudent.username || selectedStudent.studentId})`
+            : `தேர்ந்தெடுக்கப்பட்ட மாணவர்: ${selectedStudent.name} (${selectedStudent.username || selectedStudent.studentId})`}
+        </p>
+
+        <label className="mt-5 grid gap-2 text-sm font-semibold text-slate-700">
+          {isEnglish ? "Teacher Password" : "ஆசிரியர் கடவுச்சொல்"}
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-slate-400"
+            placeholder={isEnglish ? "Enter teacher password" : "ஆசிரியர் கடவுச்சொல்லை உள்ளிடவும்"}
+          />
+        </label>
+
+        {error && (
+          <div className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <button
+            onClick={onConfirm}
+            className="rounded-full bg-slate-900 px-5 py-3 text-sm font-bold text-white"
+          >
+            {isEnglish ? "Login to Student" : "மாணவராக உள்நுழைக"}
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-full bg-white px-5 py-3 text-sm font-bold text-slate-800 ring-1 ring-slate-200"
+          >
+            {isEnglish ? "Cancel" : "ரத்து செய்"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StudentAuthCard({
+  language,
+  onStudentAccess,
+  onExistingStudentLogin,
+  studentNotice,
+  students,
+  teacherPassword,
+}) {
   const isEnglish = language === "en";
   const [form, setForm] = useState({
     name: "",
-    studentId: "",
+    username: "",
     age: "",
     supportNeed: "",
   });
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [showStudentPicker, setShowStudentPicker] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleSubmit = (event) => {
     event.preventDefault();
     onStudentAccess(form);
   };
 
+  const openStudentLogin = (student) => {
+    setSelectedStudent(student);
+    setLoginPassword("");
+    setLoginError("");
+  };
+
+  const closeStudentLogin = () => {
+    setSelectedStudent(null);
+    setLoginPassword("");
+    setLoginError("");
+  };
+
+  const filteredStudents = students.filter((student) => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return true;
+
+    return [student.name, student.username, student.studentId]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(query));
+  });
+
+  const handleExistingStudentLogin = () => {
+    if (loginPassword !== teacherPassword) {
+      setLoginError(
+        isEnglish ? "Teacher password is incorrect." : "ஆசிரியர் கடவுச்சொல் தவறானது.",
+      );
+      return;
+    }
+
+    onExistingStudentLogin(selectedStudent.studentId);
+    closeStudentLogin();
+  };
+
   return (
-    <section className="rounded-[2rem] border border-white/60 bg-white/75 p-6 shadow-[0_24px_80px_rgba(16,35,63,0.12)] backdrop-blur md:p-8">
-      <div className="inline-flex rounded-full bg-sky-100 px-4 py-2 text-sm font-bold text-sky-900">
-        {isEnglish ? "Student Access" : "மாணவர் அணுகல்"}
-      </div>
-      <h2 className="mt-4 text-3xl font-black text-slate-900">
-        {isEnglish ? "Create or open a student profile" : "மாணவர் சுயவிவரத்தை உருவாக்கவும் அல்லது திறக்கவும்"}
-      </h2>
-      <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
-        {isEnglish
-          ? "Enter the student details once. The app will remember quiz attempts and overall progress for the same student ID."
-          : "மாணவர் விவரங்களை ஒரு முறை உள்ளிடுங்கள். அதே மாணவர் அடையாள எண்ணுக்கான வினாடி வினா முன்னேற்றம் சேமிக்கப்படும்."}
-      </p>
-
-      <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-2 text-sm font-semibold text-slate-700">
-            {isEnglish ? "Student Name" : "மாணவர் பெயர்"}
-            <input
-              value={form.name}
-              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none ring-0 transition focus:border-slate-400"
-              placeholder={isEnglish ? "Enter name" : "பெயரை உள்ளிடவும்"}
-            />
-          </label>
-
-          <label className="grid gap-2 text-sm font-semibold text-slate-700">
-            {isEnglish ? "Student ID" : "மாணவர் அடையாள எண்"}
-            <input
-              value={form.studentId}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, studentId: event.target.value.toUpperCase() }))
-              }
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none ring-0 transition focus:border-slate-400"
-              placeholder={isEnglish ? "Ex: STU101" : "உதா: STU101"}
-            />
-          </label>
+    <>
+      <section className="rounded-[2rem] border border-white/60 bg-white/75 p-6 shadow-[0_24px_80px_rgba(16,35,63,0.12)] backdrop-blur md:p-8">
+        <div className="inline-flex rounded-full bg-sky-100 px-4 py-2 text-sm font-bold text-sky-900">
+          {isEnglish ? "Student Access" : "மாணவர் அணுகல்"}
         </div>
+        <h2 className="mt-4 text-3xl font-black text-slate-900">
+          {isEnglish ? "Create or open a student profile" : "மாணவர் சுயவிவரத்தை உருவாக்கவும் அல்லது திறக்கவும்"}
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
+          {isEnglish
+            ? "Create the student once using name and username. Later, you can open saved students from a small searchable list."
+            : "மாணவர் பெயர் மற்றும் பயனர் பெயரை பயன்படுத்தி ஒருமுறை உருவாக்குங்கள். பின்னர், சேமிக்கப்பட்ட மாணவர்களை தேடக்கூடிய பட்டியலில் இருந்து திறக்கலாம்."}
+        </p>
 
-        <div className="grid gap-4 md:grid-cols-[0.4fr_1fr]">
-          <label className="grid gap-2 text-sm font-semibold text-slate-700">
-            {isEnglish ? "Age" : "வயது"}
-            <input
-              value={form.age}
-              onChange={(event) => setForm((prev) => ({ ...prev, age: event.target.value }))}
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none ring-0 transition focus:border-slate-400"
-              placeholder={isEnglish ? "Age" : "வயது"}
-            />
-          </label>
+        <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+              {isEnglish ? "Student Name" : "மாணவர் பெயர்"}
+              <input
+                value={form.name}
+                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none ring-0 transition focus:border-slate-400"
+                placeholder={isEnglish ? "Enter name" : "பெயரை உள்ளிடவும்"}
+              />
+            </label>
 
-          <label className="grid gap-2 text-sm font-semibold text-slate-700">
-            {isEnglish ? "Support Need / Condition" : "ஆதரவு தேவை / நிலை"}
-            <input
-              value={form.supportNeed}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, supportNeed: event.target.value }))
-              }
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none ring-0 transition focus:border-slate-400"
-              placeholder={
-                isEnglish
-                  ? "Ex: Speech delay, autism support, assisted communication"
-                  : "உதா: பேச்சு தாமதம், autism support"
-              }
-            />
-          </label>
-        </div>
+            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+              {isEnglish ? "Student Username" : "மாணவர் பயனர் பெயர்"}
+              <input
+                value={form.username}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, username: event.target.value }))
+                }
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none ring-0 transition focus:border-slate-400"
+                placeholder={isEnglish ? "Ex: arun-k" : "உதா: arun-k"}
+              />
+            </label>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-[0.4fr_1fr]">
+            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+              {isEnglish ? "Age" : "வயது"}
+              <input
+                value={form.age}
+                onChange={(event) => setForm((prev) => ({ ...prev, age: event.target.value }))}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none ring-0 transition focus:border-slate-400"
+                placeholder={isEnglish ? "Age" : "வயது"}
+              />
+            </label>
+
+            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+              {isEnglish ? "Support Need / Condition" : "ஆதரவு தேவை / நிலை"}
+              <input
+                value={form.supportNeed}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, supportNeed: event.target.value }))
+                }
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none ring-0 transition focus:border-slate-400"
+                placeholder={
+                  isEnglish
+                    ? "Ex: Speech delay, autism support, assisted communication"
+                    : "உதா: பேச்சு தாமதம், autism support"
+                }
+              />
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            className="mt-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-slate-900/20"
+          >
+            {isEnglish ? "Continue as Student" : "மாணவராக தொடரவும்"}
+          </button>
+        </form>
 
         <button
-          type="submit"
-          className="mt-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-slate-900/20"
+          type="button"
+          onClick={() => setShowStudentPicker((prev) => !prev)}
+          className="mt-4 rounded-full bg-white px-6 py-3 text-sm font-bold text-slate-800 ring-1 ring-slate-200 transition hover:bg-slate-50"
         >
-          {isEnglish ? "Continue as Student" : "மாணவராக தொடரவும்"}
+          {isEnglish ? "Login to Student" : "மாணவர் உள்நுழைவு"}
         </button>
-      </form>
 
-      {studentNotice && (
-        <div className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-          {studentNotice}
-        </div>
-      )}
-    </section>
+        {showStudentPicker && (
+          <div className="mt-4 rounded-[1.5rem] border border-slate-200 bg-white/90 p-4 shadow-sm">
+            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+              {isEnglish ? "Search student" : "மாணவரை தேடவும்"}
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none ring-0 transition focus:border-slate-400"
+                placeholder={
+                  isEnglish ? "Search by name or username" : "பெயர் அல்லது பயனர் பெயர் மூலம் தேடவும்"
+                }
+              />
+            </label>
+
+            <div className="mt-3 max-h-64 space-y-2 overflow-y-auto">
+              {filteredStudents.length ? (
+                filteredStudents.map((student) => (
+                  <button
+                    key={student.studentId}
+                    type="button"
+                    onClick={() => openStudentLogin(student)}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:bg-slate-100"
+                  >
+                    <div className="font-bold text-slate-900">{student.name}</div>
+                    <div className="text-sm text-sky-700">
+                      @{student.username || student.studentId.toLowerCase()}
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                  {isEnglish
+                    ? "No matching students found."
+                    : "பொருந்தும் மாணவர்கள் கிடைக்கவில்லை."}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {studentNotice && (
+          <div className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+            {studentNotice}
+          </div>
+        )}
+      </section>
+
+      <StudentLoginModal
+        language={language}
+        isOpen={Boolean(selectedStudent)}
+        selectedStudent={selectedStudent}
+        password={loginPassword}
+        setPassword={setLoginPassword}
+        error={loginError}
+        onClose={closeStudentLogin}
+        onConfirm={handleExistingStudentLogin}
+      />
+    </>
   );
 }
 
@@ -293,12 +464,14 @@ export default function MainMenu({
   setLanguage,
   currentStudent,
   onStudentAccess,
+  onExistingStudentLogin,
   onStudentLogout,
   onTeacherLogin,
   onTeacherOpen,
   teacherLoggedIn,
   teacherError,
   studentNotice,
+  students,
   teacherCredentials,
   cloudStatus,
   isLoadingStudents,
@@ -375,7 +548,10 @@ export default function MainMenu({
             <StudentAuthCard
               language={language}
               onStudentAccess={onStudentAccess}
+              onExistingStudentLogin={onExistingStudentLogin}
               studentNotice={studentNotice}
+              students={students}
+              teacherPassword={teacherCredentials.password}
             />
           )}
 

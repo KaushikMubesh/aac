@@ -14,6 +14,16 @@ import {
 const TEACHER_USERNAME = "teacher";
 const TEACHER_PASSWORD = "aac123";
 
+function createStudentIdentifier(value) {
+  const normalized = value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized || `STUDENT-${Date.now()}`;
+}
+
 function TeacherExitModal({
   language,
   isOpen,
@@ -163,25 +173,38 @@ function App() {
   };
 
   const handleStudentAccess = async (formData) => {
-    const studentId = formData.studentId.trim().toUpperCase();
     const name = formData.name.trim();
+    const username = formData.username.trim();
+    const requestedId = formData.studentId?.trim().toUpperCase() ?? "";
+    const baseStudentId = requestedId || createStudentIdentifier(username || name);
+    const studentId = students.some(
+      (student) => student.studentId === baseStudentId && student.username !== username,
+    )
+      ? `${baseStudentId}-${Date.now().toString().slice(-4)}`
+      : baseStudentId;
 
-    if (!studentId || !name) {
-      setStudentNotice("Enter student name and ID to continue.");
+    if (!name || !username) {
+      setStudentNotice("Enter student name and username to continue.");
       return;
     }
 
-    const existingStudent = students.find((student) => student.studentId === studentId);
+    const existingStudent = students.find(
+      (student) =>
+        student.studentId === studentId ||
+        student.username?.trim().toLowerCase() === username.toLowerCase(),
+    );
     const studentRecord = existingStudent
       ? {
           ...existingStudent,
           name,
+          username,
           age: formData.age.trim(),
           supportNeed: formData.supportNeed.trim(),
         }
       : {
           studentId,
           name,
+          username,
           age: formData.age.trim(),
           supportNeed: formData.supportNeed.trim(),
           createdAt: new Date().toISOString(),
@@ -241,6 +264,14 @@ function App() {
   const handleTeacherLogout = () => {
     setTeacherLoggedIn(false);
     setTeacherError("");
+    setPage("menu");
+  };
+
+  const handleExistingStudentLogin = (studentId) => {
+    setCurrentStudentId(studentId);
+    setTeacherLoggedIn(false);
+    setTeacherError("");
+    setStudentNotice("Saved student profile opened.");
     setPage("menu");
   };
 
@@ -357,12 +388,14 @@ function App() {
       setLanguage={setLanguage}
       currentStudent={currentStudent}
       onStudentAccess={handleStudentAccess}
+      onExistingStudentLogin={handleExistingStudentLogin}
       onStudentLogout={handleStudentLogout}
       onTeacherLogin={handleTeacherLogin}
       onTeacherOpen={() => setPage("teacher")}
       teacherLoggedIn={teacherLoggedIn}
       teacherError={teacherError}
       studentNotice={studentNotice}
+      students={students}
       teacherCredentials={{
         username: TEACHER_USERNAME,
         password: TEACHER_PASSWORD,
